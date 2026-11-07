@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import secrets
+import os
 from pathlib import Path
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -9,12 +10,14 @@ BASE = Path(__file__).resolve().parent
 DB = BASE / "lab_devices.db"
 
 env = {}
-for line in (BASE / ".env").read_text().splitlines():
-    if "=" in line:
-        k, v = line.split("=", 1)
-        env[k.strip()] = v.strip()
+env_file = BASE / ".env"
+if env_file.exists():
+    for line in env_file.read_text().splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            env[k.strip()] = v.strip()
 
-API_KEY = env.get("LAB_API_KEY", "")
+API_KEY = os.environ.get("LAB_API_KEY", env.get("LAB_API_KEY", ""))
 if len(API_KEY) < 32:
     raise RuntimeError("مفتاح الحماية غير صالح")
 
@@ -140,5 +143,6 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print("CyberSecurityLab server starting on port 8000")
-    HTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+    port = int(os.environ.get("PORT", "8000"))
+    print(f"CyberSecurityLab server starting on port {port}")
+    HTTPServer(("0.0.0.0", port), Handler).serve_forever()
